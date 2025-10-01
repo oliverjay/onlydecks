@@ -122,6 +122,18 @@ export async function getMockCategories() {
   return mockCategories
 }
 
+export async function getMockLocations() {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 200))
+  
+  // Get unique locations from all decks
+  const uniqueLocations = [...new Set(mockDecks.map(deck => deck.location))]
+  return uniqueLocations.sort().map(location => ({
+    label: location,
+    value: location
+  }))
+}
+
 export async function getMockDecks(filters = {}) {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500))
@@ -156,19 +168,9 @@ export async function getMockDecks(filters = {}) {
   
   // Apply location filter
   if (filters.location) {
-    const locationMap = {
-      'north-america': ['San Francisco, CA', 'Austin, TX', 'Boston, MA', 'Denver, CO', 'New York, NY', 'Seattle, WA', 'Los Angeles, CA', 'Phoenix, AZ'],
-      'europe': [],
-      'asia': [],
-      'other': []
-    }
-    
-    const locations = locationMap[filters.location] || []
-    if (locations.length > 0) {
-      filteredDecks = filteredDecks.filter(deck => 
-        locations.includes(deck.location)
-      )
-    }
+    filteredDecks = filteredDecks.filter(deck => 
+      deck.location === filters.location
+    )
   }
   
   // Apply date range filter

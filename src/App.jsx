@@ -6,12 +6,13 @@ import DeckGrid from './components/DeckGrid'
 import SubmitDeckModal from './components/SubmitDeckModal'
 import InvestorModal from './components/InvestorModal'
 import EnhancedPDFViewer from './components/EnhancedPDFViewer'
-import { getMockDecks as getDecks, getMockCategories as getCategories } from './lib/mockData'
+import { getMockDecks as getDecks, getMockCategories as getCategories, getMockLocations as getLocations } from './lib/mockData'
 import './App.css'
 
 function App() {
   const [decks, setDecks] = useState([])
   const [categories, setCategories] = useState([])
+  const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     category: '',
@@ -35,12 +36,14 @@ function App() {
 
   const loadInitialData = async () => {
     try {
-      const [decksData, categoriesData] = await Promise.all([
+      const [decksData, categoriesData, locationsData] = await Promise.all([
         getDecks({ dateRange: '7' }), // Load with default filter
-        getCategories()
+        getCategories(),
+        getLocations()
       ])
       setDecks(decksData)
       setCategories(categoriesData)
+      setLocations(locationsData)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -97,6 +100,7 @@ function App() {
       <main className="flex-1 py-12">
         <FilterBar 
           categories={categories}
+          locations={locations}
           filters={filters}
           onFilterChange={handleFilterChange}
           onPremiumFilterClick={handlePremiumFilterClick}
@@ -133,6 +137,7 @@ function App() {
         isOpen={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
         categories={categories}
+        locations={locations}
       />
       
       <InvestorModal 

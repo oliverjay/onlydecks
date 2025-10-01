@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { X, Upload, AlertCircle } from 'lucide-react'
 
-export default function SubmitDeckModal({ isOpen, onClose, categories }) {
+export default function SubmitDeckModal({ isOpen, onClose, categories, locations }) {
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -17,6 +17,13 @@ export default function SubmitDeckModal({ isOpen, onClose, categories }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // Basic validation
+    if (!formData.title || !formData.location || !formData.category || !formData.file) {
+      alert('Please fill in all required fields and upload a PDF')
+      return
+    }
+    
     // TODO: Implement deck submission
     console.log('Submitting deck:', formData)
     onClose()
@@ -101,18 +108,28 @@ export default function SubmitDeckModal({ isOpen, onClose, categories }) {
               />
             </div>
 
+            {/* Location Selection */}
             <div>
-              <label className="block text-sm font-normal text-gray-700 mb-3 tracking-wide">
-                Location *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g., San Francisco, CA or London, UK"
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent font-normal"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              />
+              <h3 className="text-lg font-normal text-gray-900 mb-6 tracking-wide">Choose Location *</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {locations && locations.map((location) => (
+                  <button
+                    key={location.value}
+                    type="button"
+                    className={`p-4 border rounded-lg text-sm font-normal tracking-wide transition-all duration-200 ${
+                      formData.location === location.value
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setFormData(prev => ({ ...prev, location: location.value }))}
+                  >
+                    {location.label}
+                  </button>
+                ))}
+              </div>
+              {(!locations || locations.length === 0) && (
+                <p className="text-sm text-gray-500 font-normal">Loading locations...</p>
+              )}
             </div>
 
             {/* Category Selection */}

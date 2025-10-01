@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { ChevronDown } from 'lucide-react'
 
-export default function FilterBar({ categories, filters, onFilterChange, onPremiumFilterClick }) {
+export default function FilterBar({ categories, locations, filters, onFilterChange, onPremiumFilterClick }) {
   const [openDropdown, setOpenDropdown] = useState(null)
 
   const fundingRanges = [
@@ -14,12 +14,7 @@ export default function FilterBar({ categories, filters, onFilterChange, onPremi
     { label: '$10M+', value: '10m-plus', min: 1000000000, max: null }
   ]
 
-  const locations = [
-    { label: 'North America', value: 'north-america' },
-    { label: 'Europe', value: 'europe' },
-    { label: 'Asia', value: 'asia' },
-    { label: 'Other', value: 'other' }
-  ]
+  // locations prop is passed in from parent component
 
   const dateRanges = [
     { label: '< 7 days', value: 'premium', isPremium: true },
@@ -51,7 +46,7 @@ export default function FilterBar({ categories, filters, onFilterChange, onPremi
         const range = fundingRanges.find(r => r.value === value)
         return range ? range.label : 'Funding Needed'
       case 'location':
-        const location = locations.find(l => l.value === value)
+        const location = locations?.find(l => l.value === value)
         return location ? location.label : 'Location'
       case 'dateRange':
         const dateRange = dateRanges.find(d => d.value === value)
@@ -125,7 +120,7 @@ export default function FilterBar({ categories, filters, onFilterChange, onPremi
           <FilterDropdown
             type="location"
             label="Locations"
-            options={locations}
+            options={locations || []}
             value={filters.location}
           />
           
@@ -158,7 +153,7 @@ export default function FilterBar({ categories, filters, onFilterChange, onPremi
           <FilterDropdown
             type="location"
             label="Locations"
-            options={locations}
+            options={locations || []}
             value={filters.location}
           />
           
