@@ -1,0 +1,209 @@
+/* Mobile-first responsive improvements for OnlyDecks */
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  .hover\:bg-gray-50:hover {
+    background-color: transparent;
+  }
+  
+  .hover\:shadow-lg:hover {
+    box-shadow: none;
+  }
+  
+  /* Larger touch targets */
+  button, .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile viewport optimizations */
+@media (max-width: 640px) {
+  /* Header adjustments */
+  .header-container {
+    padding: 0.75rem 1rem;
+  }
+  
+  .header-title {
+    font-size: 1.5rem;
+  }
+  
+  .header-buttons {
+    gap: 0.5rem;
+  }
+  
+  .header-buttons button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Filter bar mobile layout */
+  .filter-container {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  
+  .filter-button {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Deck grid mobile layout */
+  .deck-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .deck-card {
+    border-radius: 0.75rem;
+  }
+  
+  .deck-card-image {
+    height: 200px;
+  }
+  
+  .deck-card-content {
+    padding: 1rem;
+  }
+  
+  .deck-card-title {
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+  
+  .deck-card-description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  
+  /* Modal mobile adjustments */
+  .modal-container {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+  }
+  
+  .modal-header {
+    margin-bottom: 1.5rem;
+  }
+  
+  .modal-title {
+    font-size: 1.5rem;
+  }
+  
+  /* PDF viewer mobile optimizations */
+  .pdf-viewer-header {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .pdf-viewer-title {
+    font-size: 1rem;
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .pdf-viewer-controls {
+    gap: 0.25rem;
+  }
+  
+  .pdf-viewer-controls button {
+    padding: 0.5rem;
+  }
+  
+  .pdf-viewer-content {
+    padding: 1rem;
+  }
+  
+  .pdf-viewer-iframe {
+    height: 60vh;
+    min-height: 400px;
+  }
+  
+  /* Form improvements */
+  .form-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.75rem;
+  }
+  
+  .form-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .deck-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  
+  .filter-container {
+    padding: 1.5rem;
+    justify-content: center;
+  }
+  
+  .filter-button {
+    min-width: 120px;
+  }
+}
+
+/* Performance optimizations */
+.deck-card-image {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .deck-card {
+    border: 2px solid #000;
+  }
+  
+  .pro-badge {
+    background-color: #000;
+    color: #fff;
+    border: 2px solid #fff;
+  }
+}
+
+/* Dark mode considerations */
+@media (prefers-color-scheme: dark) {
+  /* Keep light theme for now, but prepare for future dark mode */
+  .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+}
