@@ -5,7 +5,6 @@ import { X, Upload, AlertCircle } from 'lucide-react'
 export default function SubmitDeckModal({ isOpen, onClose, categories }) {
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
     category: '',
     fundingMin: '',
     fundingMax: '',
@@ -28,8 +27,14 @@ export default function SubmitDeckModal({ isOpen, onClose, categories }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
@@ -98,13 +103,15 @@ export default function SubmitDeckModal({ isOpen, onClose, categories }) {
 
             <div>
               <label className="block text-sm font-normal text-gray-700 mb-3 tracking-wide">
-                Description
+                Location *
               </label>
-              <textarea
-                rows={3}
+              <input
+                type="text"
+                required
+                placeholder="e.g., San Francisco, CA or London, UK"
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent font-normal"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
               />
             </div>
 
