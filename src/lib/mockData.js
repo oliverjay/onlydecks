@@ -1,11 +1,13 @@
 // Mock data for development and testing
 export const mockCategories = [
   { id: '1', name: 'SaaS', slug: 'saas' },
-  { id: '2', name: 'Physical Product', slug: 'physical-product' },
-  { id: '3', name: 'Media', slug: 'media' },
-  { id: '4', name: 'Brick & Mortar', slug: 'brick-mortar' },
-  { id: '5', name: 'Real-estate', slug: 'real-estate' },
-  { id: '6', name: 'Other', slug: 'other' }
+  { id: '2', name: 'Mobile App', slug: 'mobile-app' },
+  { id: '3', name: 'Website/Platform', slug: 'website-platform' },
+  { id: '4', name: 'AI/ML', slug: 'ai-ml' },
+  { id: '5', name: 'E-commerce', slug: 'ecommerce' },
+  { id: '6', name: 'Fintech', slug: 'fintech' },
+  { id: '7', name: 'Healthtech', slug: 'healthtech' },
+  { id: '8', name: 'Other', slug: 'other' }
 ]
 
 export const mockDecks = [
@@ -13,7 +15,7 @@ export const mockDecks = [
     id: '1',
     title: 'AI-Powered Customer Support Platform',
     description: 'Revolutionary AI chatbot that reduces customer support costs by 80% while improving satisfaction scores.',
-    categories: { name: 'SaaS', slug: 'saas' },
+    categories: { name: 'AI/ML', slug: 'ai-ml' },
     funding_min: 100000000, // $1M in cents
     funding_max: 500000000, // $5M in cents
     location: 'San Francisco, CA',
@@ -26,7 +28,7 @@ export const mockDecks = [
     id: '2',
     title: 'Sustainable Food Packaging Startup',
     description: 'Biodegradable packaging solution made from agricultural waste, targeting the $350B packaging industry.',
-    categories: { name: 'Physical Product', slug: 'physical-product' },
+    categories: { name: 'E-commerce', slug: 'ecommerce' },
     funding_min: 250000000, // $2.5M in cents
     funding_max: 1000000000, // $10M in cents
     location: 'Austin, TX',
@@ -39,7 +41,7 @@ export const mockDecks = [
     id: '3',
     title: 'Next-Gen Fitness Tracking Wearable',
     description: 'Advanced biometric monitoring device with 30-day battery life and medical-grade accuracy.',
-    categories: { name: 'Physical Product', slug: 'physical-product' },
+    categories: { name: 'Mobile App', slug: 'mobile-app' },
     funding_min: 500000000, // $5M in cents
     funding_max: 1500000000, // $15M in cents
     location: 'Boston, MA',
@@ -78,7 +80,7 @@ export const mockDecks = [
     id: '6',
     title: 'Smart Home Security System',
     description: 'AI-powered home security with facial recognition and predictive threat detection.',
-    categories: { name: 'Physical Product', slug: 'physical-product' },
+    categories: { name: 'AI/ML', slug: 'ai-ml' },
     funding_min: 200000000, // $2M in cents
     funding_max: 800000000, // $8M in cents
     location: 'Seattle, WA',
@@ -91,7 +93,7 @@ export const mockDecks = [
     id: '7',
     title: 'Digital Health Platform',
     description: 'Telemedicine platform connecting patients with specialists using AI-powered diagnosis assistance.',
-    categories: { name: 'SaaS', slug: 'saas' },
+    categories: { name: 'Healthtech', slug: 'healthtech' },
     funding_min: 300000000, // $3M in cents
     funding_max: 1200000000, // $12M in cents
     location: 'Los Angeles, CA',
@@ -104,7 +106,7 @@ export const mockDecks = [
     id: '8',
     title: 'Renewable Energy Storage',
     description: 'Advanced battery technology for residential solar energy storage with 20-year lifespan.',
-    categories: { name: 'Physical Product', slug: 'physical-product' },
+    categories: { name: 'Other', slug: 'other' },
     funding_min: 2000000000, // $20M in cents
     funding_max: 10000000000, // $100M in cents
     location: 'Phoenix, AZ',
@@ -126,12 +128,13 @@ export async function getMockLocations() {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 200))
   
-  // Get unique locations from all decks
-  const uniqueLocations = [...new Set(mockDecks.map(deck => deck.location))]
-  return uniqueLocations.sort().map(location => ({
-    label: location,
-    value: location
-  }))
+  // Return predefined regions instead of specific locations
+  return [
+    { label: 'North America', value: 'north-america' },
+    { label: 'Europe', value: 'europe' },
+    { label: 'Asia Pacific', value: 'asia-pacific' },
+    { label: 'Other', value: 'other' }
+  ]
 }
 
 export async function getMockDecks(filters = {}) {
@@ -168,9 +171,19 @@ export async function getMockDecks(filters = {}) {
   
   // Apply location filter
   if (filters.location) {
-    filteredDecks = filteredDecks.filter(deck => 
-      deck.location === filters.location
-    )
+    const locationMap = {
+      'north-america': ['San Francisco, CA', 'Austin, TX', 'Boston, MA', 'Denver, CO', 'New York, NY', 'Seattle, WA', 'Los Angeles, CA', 'Phoenix, AZ'],
+      'europe': ['London, UK', 'Berlin, Germany', 'Paris, France', 'Amsterdam, Netherlands'],
+      'asia-pacific': ['Singapore', 'Tokyo, Japan', 'Sydney, Australia', 'Hong Kong'],
+      'other': []
+    }
+    
+    const locations = locationMap[filters.location] || []
+    if (locations.length > 0) {
+      filteredDecks = filteredDecks.filter(deck => 
+        locations.includes(deck.location)
+      )
+    }
   }
   
   // Apply date range filter

@@ -1,9 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { ChevronDown } from 'lucide-react'
 
 export default function FilterBar({ categories, locations, filters, onFilterChange, onPremiumFilterClick }) {
   const [openDropdown, setOpenDropdown] = useState(null)
+  const filterBarRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterBarRef.current && !filterBarRef.current.contains(event.target)) {
+        setOpenDropdown(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const fundingRanges = [
     { label: 'Under $50K', value: 'under-50k', min: 0, max: 5000000 },
@@ -99,7 +114,7 @@ export default function FilterBar({ categories, locations, filters, onFilterChan
   )
 
   return (
-    <div className="w-full mb-12">
+    <div ref={filterBarRef} className="w-full mb-12">
       {/* Desktop - Centered */}
       <div className="hidden md:flex justify-center">
         <div className="flex gap-4">

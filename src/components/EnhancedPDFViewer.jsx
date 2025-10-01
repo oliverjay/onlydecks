@@ -1,22 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
-import { X, Download, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2 } from 'lucide-react'
+import { X, Download, RotateCw } from 'lucide-react'
 
 export default function EnhancedPDFViewer({ deck, onClose }) {
-  const [zoom, setZoom] = useState(1)
-  const [isFullscreen, setIsFullscreen] = useState(false)
   const [rotation, setRotation] = useState(0)
 
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === 'Escape') {
         onClose()
-      } else if (e.key === '+' || e.key === '=') {
-        handleZoomIn()
-      } else if (e.key === '-') {
-        handleZoomOut()
-      } else if (e.key === 'f' || e.key === 'F') {
-        toggleFullscreen()
       }
     }
 
@@ -24,26 +16,8 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [onClose])
 
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.25, 3))
-  }
-
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.25, 0.5))
-  }
-
   const handleRotate = () => {
     setRotation(prev => (prev + 90) % 360)
-  }
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
-    }
   }
 
   const handleDownload = () => {
@@ -56,7 +30,6 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
   }
 
   const resetView = () => {
-    setZoom(1)
     setRotation(0)
   }
 
@@ -74,23 +47,11 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
         </div>
         
         <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="sm" onClick={handleZoomOut} title="Zoom Out (-)">
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-gray-600 min-w-[60px] text-center">
-            {Math.round(zoom * 100)}%
-          </span>
-          <Button variant="ghost" size="sm" onClick={handleZoomIn} title="Zoom In (+)">
-            <ZoomIn className="h-4 w-4" />
-          </Button>
           <Button variant="ghost" size="sm" onClick={handleRotate} title="Rotate">
             <RotateCw className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={resetView} title="Reset View">
-            <span className="text-xs">1:1</span>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={toggleFullscreen} title="Fullscreen (F)">
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <span className="text-xs">Reset</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={handleDownload} title="Download PDF">
             <Download className="h-4 w-4" />
@@ -109,7 +70,7 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
               <div 
                 className="transition-transform duration-200 ease-in-out"
                 style={{ 
-                  transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                  transform: `rotate(${rotation}deg)`,
                   transformOrigin: 'center center'
                 }}
               >

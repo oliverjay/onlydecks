@@ -19,7 +19,7 @@ export default function Header({ onInvestorClick, onSubmitClick }) {
 
           {/* Center - Logo - Perfectly centered */}
           <div className="flex-shrink-0">
-            <h1 className="text-lg sm:text-2xl font-normal text-black tracking-tight">
+            <h1 className="text-lg sm:text-2xl font-semibold text-black tracking-tight">
               OnlyDecks
             </h1>
           </div>
