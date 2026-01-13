@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button.jsx'
-import { ArrowLeft, Eye, Download, Share2, ChevronLeft, ChevronRight, Loader2, MessageCircle, X, Copy, Check, Twitter, Linkedin, Mail, Send, Maximize2, Minimize2 } from 'lucide-react'
+import { ArrowLeft, Eye, Download, Share2, ChevronLeft, ChevronRight, Loader2, MessageCircle, X, Copy, Check, Twitter, Linkedin, Mail, Send, Maximize2, Minimize2, ExternalLink } from 'lucide-react'
 import { formatFundingRange, trackDeckView, getDeckViewCount, getComments, submitComment } from '../lib/database'
 import * as pdfjsLib from 'pdfjs-dist'
 
@@ -97,6 +97,11 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
     }
   }, [totalPages, isOverSidebar])
 
+  // Check if on mobile
+  const isMobile = () => {
+    return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  }
+
   // Fullscreen handling
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -108,6 +113,12 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
   }, [])
 
   const toggleFullscreen = () => {
+    // On mobile, open PDF in new tab instead of fullscreen (Fullscreen API not supported)
+    if (isMobile()) {
+      window.open(deck.pdf_url, '_blank')
+      return
+    }
+    
     if (!document.fullscreenElement) {
       viewerRef.current?.requestFullscreen()
     } else {
@@ -619,26 +630,30 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
               <button 
                 onClick={handleDownload}
                 className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+                title="Download PDF"
               >
                 <Download className="h-5 w-5" />
               </button>
               <button 
                 onClick={() => setShowFloatingShareMenu(!showFloatingShareMenu)}
                 className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+                title="Share"
               >
                 <Share2 className="h-5 w-5" />
               </button>
               <button 
                 onClick={() => setShowCommentPanel(!showCommentPanel)}
                 className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+                title="Comment"
               >
                 <MessageCircle className="h-5 w-5" />
               </button>
               <button 
                 onClick={toggleFullscreen}
                 className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+                title="Open PDF"
               >
-                <Maximize2 className="h-5 w-5" />
+                <ExternalLink className="h-5 w-5" />
               </button>
             </div>
           </div>
