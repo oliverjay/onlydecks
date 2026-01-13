@@ -122,6 +122,16 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Custom text selection - black background, white text */
+  ::selection {
+    background-color: #000000;
+    color: #ffffff;
+  }
+  ::-moz-selection {
+    background-color: #000000;
+    color: #ffffff;
+  }
 }
 
 /* Custom styles for OnlyDecks */
@@ -137,7 +147,6 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
-  border-radius: 1rem;
 }
 
 .deck-card:hover .deck-hover-overlay {

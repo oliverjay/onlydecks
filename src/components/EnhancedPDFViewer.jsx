@@ -1,24 +1,273 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button.jsx'
-import { X, Download, RotateCw } from 'lucide-react'
+import { ArrowLeft, Eye, Download, Share2, ChevronLeft, ChevronRight, Loader2, MessageCircle, X, Copy, Check, Twitter, Linkedin, Mail, Send, Maximize2, Minimize2 } from 'lucide-react'
+import { formatFundingRange, trackDeckView, getDeckViewCount, getComments, submitComment } from '../lib/database'
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Set up PDF.js worker - use unpkg for reliable worker access
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
 export default function EnhancedPDFViewer({ deck, onClose }) {
-  const [rotation, setRotation] = useState(0)
+  const [views, setViews] = useState(0)
+  const [hasTracked, setHasTracked] = useState(false)
+  const [pdfDoc, setPdfDoc] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [thumbnails, setThumbnails] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showHeaderShareMenu, setShowHeaderShareMenu] = useState(false)
+  const [showFloatingShareMenu, setShowFloatingShareMenu] = useState(false)
+  const [showCommentPanel, setShowCommentPanel] = useState(false)
+  const [comment, setComment] = useState('')
+  const [authorName, setAuthorName] = useState('')
+  const [comments, setComments] = useState([])
+  const [submittingComment, setSubmittingComment] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isOverSidebar, setIsOverSidebar] = useState(false)
+  const mainCanvasRef = useRef(null)
+  const thumbnailRefs = useRef({})
+  const sidebarRef = useRef(null)
+  const viewerRef = useRef(null)
 
+  // Prevent body scroll when viewer is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [])
+
+  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === 'Escape') {
-        onClose()
+        if (document.fullscreenElement) {
+          document.exitFullscreen()
+        } else {
+          onClose()
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        setCurrentPage(p => Math.max(1, p - 1))
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        setCurrentPage(p => Math.min(totalPages, p + 1))
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault()
+        toggleFullscreen()
       }
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => document.removeEventListener('keydown', handleKeyPress)
-  }, [onClose])
+  }, [onClose, totalPages])
 
-  const handleRotate = () => {
-    setRotation(prev => (prev + 90) % 360)
+  // Handle scroll to navigate pages (only when not over sidebar)
+  useEffect(() => {
+    let lastScrollTime = 0
+    const scrollThreshold = 300 // ms between page changes
+
+    const handleWheel = (e) => {
+      // If hovering over sidebar, let it scroll naturally
+      if (isOverSidebar) return
+      
+      e.preventDefault()
+      
+      const now = Date.now()
+      if (now - lastScrollTime < scrollThreshold) return
+      
+      if (e.deltaY > 0) {
+        // Scroll down - next page
+        setCurrentPage(p => Math.min(totalPages, p + 1))
+        lastScrollTime = now
+      } else if (e.deltaY < 0) {
+        // Scroll up - previous page
+        setCurrentPage(p => Math.max(1, p - 1))
+        lastScrollTime = now
+      }
+    }
+
+    // Add wheel listener to the main content area
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    
+    return () => {
+      window.removeEventListener('wheel', handleWheel)
+    }
+  }, [totalPages, isOverSidebar])
+
+  // Fullscreen handling
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      viewerRef.current?.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
   }
+
+  // Track view and fetch view count
+  useEffect(() => {
+    if (deck?.id && !hasTracked) {
+      trackDeckView(deck.id)
+      setHasTracked(true)
+      getDeckViewCount(deck.id).then(count => {
+        setViews(count + 1)
+      })
+    }
+  }, [deck?.id, hasTracked])
+
+  // Load comments
+  useEffect(() => {
+    if (deck?.id) {
+      getComments(deck.id).then(setComments)
+    }
+  }, [deck?.id])
+
+  // Load PDF document with caching
+  useEffect(() => {
+    if (!deck?.pdf_url) return
+
+    const CACHE_NAME = 'onlydecks-pdf-cache'
+
+    const loadPDF = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        let pdfData
+
+        // Try to get from cache first
+        if ('caches' in window) {
+          try {
+            const cache = await caches.open(CACHE_NAME)
+            const cachedResponse = await cache.match(deck.pdf_url)
+            
+            if (cachedResponse) {
+              // Use cached version
+              pdfData = await cachedResponse.arrayBuffer()
+              console.log('PDF loaded from cache')
+            } else {
+              // Fetch and cache
+              const response = await fetch(deck.pdf_url)
+              const responseClone = response.clone()
+              pdfData = await response.arrayBuffer()
+              
+              // Cache for next time
+              cache.put(deck.pdf_url, responseClone)
+              console.log('PDF cached for future use')
+            }
+          } catch (cacheError) {
+            console.warn('Cache error, falling back to direct load:', cacheError)
+          }
+        }
+
+        // Load the PDF (from cache data or directly)
+        const loadingTask = pdfData 
+          ? pdfjsLib.getDocument({ data: pdfData })
+          : pdfjsLib.getDocument({
+              url: deck.pdf_url,
+              cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/cmaps/',
+              cMapPacked: true,
+            })
+
+        const pdf = await loadingTask.promise
+        setPdfDoc(pdf)
+        setTotalPages(pdf.numPages)
+
+        // Generate thumbnails for all pages
+        const thumbs = []
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const viewport = page.getViewport({ scale: 0.2 })
+          
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')
+          canvas.width = viewport.width
+          canvas.height = viewport.height
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          }).promise
+
+          thumbs.push({
+            pageNum: i,
+            dataUrl: canvas.toDataURL()
+          })
+        }
+        setThumbnails(thumbs)
+        setLoading(false)
+      } catch (err) {
+        console.error('Error loading PDF:', err)
+        setError('Failed to load PDF')
+        setLoading(false)
+      }
+    }
+
+    loadPDF()
+  }, [deck?.pdf_url])
+
+  // Render current page to main canvas
+  useEffect(() => {
+    if (!pdfDoc || !mainCanvasRef.current || loading) return
+
+    const renderPage = async () => {
+      try {
+        const page = await pdfDoc.getPage(currentPage)
+        const canvas = mainCanvasRef.current
+        if (!canvas) return
+        
+        const context = canvas.getContext('2d')
+
+        // Get container dimensions with fallback
+        const container = canvas.parentElement?.parentElement
+        const containerWidth = container?.clientWidth || 800
+        const containerHeight = container?.clientHeight || 600
+        
+        const viewport = page.getViewport({ scale: 1 })
+        const scaleX = (containerWidth - 80) / viewport.width
+        const scaleY = (containerHeight - 80) / viewport.height
+        const scale = Math.min(scaleX, scaleY, 2.5) // Allow up to 2.5x for quality
+
+        const scaledViewport = page.getViewport({ scale })
+        
+        // Set canvas dimensions
+        canvas.width = scaledViewport.width
+        canvas.height = scaledViewport.height
+        canvas.style.width = `${scaledViewport.width}px`
+        canvas.style.height = `${scaledViewport.height}px`
+
+        await page.render({
+          canvasContext: context,
+          viewport: scaledViewport
+        }).promise
+      } catch (err) {
+        console.error('Error rendering page:', err)
+      }
+    }
+
+    // Small delay to ensure container is sized
+    const timer = setTimeout(renderPage, 50)
+    return () => clearTimeout(timer)
+  }, [pdfDoc, currentPage, loading])
+
+  // Scroll thumbnail into view when page changes
+  useEffect(() => {
+    const thumbEl = thumbnailRefs.current[currentPage]
+    if (thumbEl) {
+      thumbEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [currentPage])
 
   const handleDownload = () => {
     const link = document.createElement('a')
@@ -29,118 +278,504 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
     document.body.removeChild(link)
   }
 
-  const resetView = () => {
-    setRotation(0)
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareText = `Check out this pitch deck: ${deck.title}`
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleShareTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank')
+    setShowHeaderShareMenu(false)
+    setShowFloatingShareMenu(false)
+  }
+
+  const handleShareLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank')
+    setShowHeaderShareMenu(false)
+    setShowFloatingShareMenu(false)
+  }
+
+  const handleShareEmail = () => {
+    window.location.href = `mailto:?subject=${encodeURIComponent(deck.title)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`
+    setShowHeaderShareMenu(false)
+    setShowFloatingShareMenu(false)
+  }
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault()
+    if (comment.trim() && authorName.trim()) {
+      setSubmittingComment(true)
+      try {
+        const newComment = await submitComment(deck.id, authorName.trim(), comment.trim())
+        setComments(prev => [newComment, ...prev])
+        setComment('')
+        // Keep the author name for convenience if they want to comment again
+      } catch (err) {
+        console.error('Error submitting comment:', err)
+        alert('Failed to submit comment. Please try again.')
+      } finally {
+        setSubmittingComment(false)
+      }
+    }
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-4 flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{deck.title}</h3>
-          {deck.categories && (
-            <span className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-600 flex-shrink-0">
-              {deck.categories.name}
-            </span>
-          )}
+    <div ref={viewerRef} className={`fixed inset-0 z-50 flex flex-col ${isFullscreen ? 'bg-black' : 'bg-black'}`}>
+      {/* Header - hidden in fullscreen */}
+      {!isFullscreen && (
+      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between flex-shrink-0">
+        {/* Left side - Back button, Title, and Metadata */}
+        <div className="flex items-center space-x-5 flex-1 min-w-0">
+          <Button 
+            variant="ghost" 
+            onClick={onClose} 
+            className="h-12 w-12 p-0 hover:bg-gray-50 rounded-xl flex-shrink-0 transition-all duration-200"
+            title="Back (Esc)"
+          >
+            <ArrowLeft className="h-6 w-6 text-gray-700" />
+          </Button>
+          
+          <div className="min-w-0">
+            <div className="flex items-center space-x-4 mb-1.5">
+              <h3 className="text-lg font-medium text-gray-900 truncate tracking-tight">{deck.title}</h3>
+              {deck.expires_at && new Date(deck.expires_at) > new Date() && (
+                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs flex-shrink-0 font-medium tracking-wide">
+                  Currently Fundraising
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-4 text-sm text-gray-600 font-normal">
+              {deck.categories && (
+                <span className="tracking-wide">{deck.categories.name}</span>
+              )}
+              {deck.categories && (deck.funding_min || deck.location) && (
+                <span className="text-gray-400">•</span>
+              )}
+              {deck.funding_min && deck.funding_max && (
+                <span className="tracking-wide">{formatFundingRange(deck.funding_min, deck.funding_max)}</span>
+              )}
+              {deck.funding_min && deck.location && (
+                <span className="text-gray-400">•</span>
+              )}
+              {deck.location && (
+                <span className="tracking-wide">{deck.location}</span>
+              )}
+            </div>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="sm" onClick={handleRotate} title="Rotate">
-            <RotateCw className="h-4 w-4" />
+        {/* Right side - Views, Download, Share */}
+        <div className="flex items-center space-x-1 flex-shrink-0">
+          <Button 
+            variant="ghost" 
+            className="h-11 px-4 hover:bg-gray-50 rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
+            title="Views"
+          >
+            <Eye className="h-5 w-5 mr-2" />
+            <span className="text-sm font-medium tracking-wide">{views}</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={resetView} title="Reset View">
-            <span className="text-xs">Reset</span>
+          <Button 
+            variant="ghost" 
+            onClick={handleDownload}
+            className="h-11 w-11 hover:bg-gray-50 rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
+            title="Download PDF"
+          >
+            <Download className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleDownload} title="Download PDF">
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onClose} title="Close (ESC)">
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowHeaderShareMenu(!showHeaderShareMenu)}
+              className="h-11 w-11 hover:bg-gray-50 rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
+              title="Share"
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
+            
+            {/* Share Menu Dropdown */}
+            {showHeaderShareMenu && (
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 min-w-[280px] z-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900">Share this deck</h4>
+                  <button 
+                    onClick={() => setShowHeaderShareMenu(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                
+                {/* Copy Link */}
+                <div className="flex items-center bg-gray-50 rounded-xl p-3 mb-4">
+                  <input 
+                    type="text"
+                    value={shareUrl}
+                    readOnly
+                    className="flex-1 bg-transparent text-sm text-gray-600 outline-none truncate"
+                  />
+                  <button 
+                    onClick={handleCopyLink}
+                    className="ml-2 flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4 mr-1 text-green-600" />
+                        <span className="text-green-600">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+                
+                {/* Social Share Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleShareTwitter}
+                    className="flex-1 flex items-center justify-center gap-2 bg-black text-white rounded-xl py-2.5 px-4 hover:bg-gray-800 transition-colors text-sm font-medium"
+                  >
+                    <Twitter className="h-4 w-4" />
+                    Twitter
+                  </button>
+                  <button
+                    onClick={handleShareLinkedIn}
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#0077B5] text-white rounded-xl py-2.5 px-4 hover:bg-[#006699] transition-colors text-sm font-medium"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn
+                  </button>
+                  <button
+                    onClick={handleShareEmail}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-800 rounded-xl py-2.5 px-4 hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+      )}
 
-      {/* PDF Content */}
-      <div className="flex-1 overflow-auto bg-gray-100 p-4">
-        <div className="max-w-5xl mx-auto">
-          {deck.pdf_url ? (
-            <div className="bg-white shadow-2xl mx-auto rounded-lg overflow-hidden">
-              <div 
-                className="transition-transform duration-200 ease-in-out"
-                style={{ 
-                  transform: `rotate(${rotation}deg)`,
-                  transformOrigin: 'center center'
-                }}
-              >
-                <iframe
-                  src={`${deck.pdf_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
-                  className="w-full h-[800px] border-0"
-                  title={deck.title}
-                  loading="lazy"
-                />
-              </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Thumbnail Sidebar - hidden in fullscreen */}
+        {!isFullscreen && (
+        <div 
+          ref={sidebarRef}
+          className="w-48 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0 p-3 space-y-4"
+          onMouseEnter={() => setIsOverSidebar(true)}
+          onMouseLeave={() => setIsOverSidebar(false)}
+        >
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <Loader2 className="h-6 w-6 animate-spin mb-2" />
+              <span className="text-xs">Loading pages...</span>
             </div>
           ) : (
-            <div className="bg-white rounded-lg p-12 text-center shadow-lg">
-              <div className="text-gray-400 mb-6">
-                <svg className="mx-auto h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium text-gray-900 mb-3">PDF not available</h3>
-              <p className="text-gray-500 mb-6">This deck's PDF is currently unavailable or still being processed.</p>
-              <Button onClick={onClose} variant="outline">
-                Go Back
-              </Button>
+            thumbnails.map((thumb) => (
+              <button
+                key={thumb.pageNum}
+                ref={el => thumbnailRefs.current[thumb.pageNum] = el}
+                onClick={() => setCurrentPage(thumb.pageNum)}
+                className={`w-full rounded-sm overflow-hidden transition-all duration-200 border ${
+                  currentPage === thumb.pageNum 
+                    ? 'ring-2 ring-black ring-offset-2 ring-offset-white border-black' 
+                    : 'border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100'
+                }`}
+              >
+                <img 
+                  src={thumb.dataUrl} 
+                  alt={`Page ${thumb.pageNum}`}
+                  className="w-full h-auto"
+                />
+                <div className={`text-center py-1.5 text-xs bg-gray-50 border-t border-gray-100 ${
+                  currentPage === thumb.pageNum ? 'text-black font-semibold' : 'text-gray-500'
+                }`}>
+                  {thumb.pageNum}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+        )}
+
+        {/* Main Slide View */}
+        <div className={`flex-1 flex items-center justify-center overflow-auto relative ${isFullscreen ? 'bg-black p-0' : 'bg-gray-100 p-4'}`}>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center text-gray-500">
+              <Loader2 className="h-12 w-12 animate-spin mb-4" />
+              <p className="font-medium">Loading presentation...</p>
             </div>
+          ) : error ? (
+            <div className="text-center text-gray-500">
+              <p className="text-xl font-medium mb-2">Unable to load PDF</p>
+              <p className="text-sm mb-4">{error}</p>
+              <Button onClick={onClose} variant="outline">Go Back</Button>
+            </div>
+          ) : (
+            <>
+              <div className={`${isFullscreen ? '' : 'bg-white shadow-2xl rounded-sm'} overflow-hidden`}>
+                <canvas ref={mainCanvasRef} className="block max-w-full h-auto" />
+              </div>
+              
+              {/* Fullscreen navigation zones - click left/right to navigate */}
+              {isFullscreen && (
+                <>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className="absolute left-0 top-0 w-1/4 h-full cursor-w-resize opacity-0 hover:opacity-100 transition-opacity flex items-center justify-start pl-8"
+                    disabled={currentPage === 1}
+                  >
+                    <div className={`bg-white/20 backdrop-blur-sm rounded-full p-3 ${currentPage === 1 ? 'opacity-30' : ''}`}>
+                      <ChevronLeft className="h-8 w-8 text-white" />
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className="absolute right-0 top-0 w-1/4 h-full cursor-e-resize opacity-0 hover:opacity-100 transition-opacity flex items-center justify-end pr-8"
+                    disabled={currentPage === totalPages}
+                  >
+                    <div className={`bg-white/20 backdrop-blur-sm rounded-full p-3 ${currentPage === totalPages ? 'opacity-30' : ''}`}>
+                      <ChevronRight className="h-8 w-8 text-white" />
+                    </div>
+                  </button>
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="bg-white border-t border-gray-200 px-4 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between text-sm text-gray-600">
-          <div className="flex items-center space-x-6">
-            {deck.location && (
-              <div className="flex items-center space-x-1">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>{deck.location}</span>
-              </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>
-                Submitted {new Date(deck.submitted_at).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </span>
+      {/* Floating Action Buttons - Bottom Center */}
+      {isFullscreen ? (
+        /* Minimal UI in fullscreen - just exit button and page indicator */
+        <div className="absolute bottom-8 right-8">
+          <div className="flex items-center gap-4">
+            {/* Exit fullscreen button */}
+            <Button 
+              onClick={toggleFullscreen}
+              className="bg-white/90 hover:bg-white text-gray-900 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg"
+            >
+              <Minimize2 className="h-4 w-4 mr-2" />
+              Exit Fullscreen
+            </Button>
+            {/* Page indicator */}
+            <div className="bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+              {currentPage} / {totalPages}
             </div>
-            {deck.funding_min && deck.funding_max && (
-              <div className="flex items-center space-x-1">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-                <span>
-                  ${(deck.funding_min / 100000000).toFixed(1)}M — ${(deck.funding_max / 100000000).toFixed(1)}M
-                </span>
-              </div>
-            )}
-          </div>
-          
-          <div className="text-xs text-gray-400 hidden sm:block">
-            Use +/- to zoom • F for fullscreen • ESC to close
           </div>
         </div>
+      ) : (
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 ml-24">
+        <div className="flex items-center bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl px-2 py-2 space-x-1 border border-gray-200/50">
+          <Button 
+            variant="ghost" 
+            onClick={handleDownload}
+            className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+          >
+            <Download className="h-5 w-5 mr-2.5" />
+            <span className="text-sm font-medium tracking-wide">Download</span>
+          </Button>
+          <div className="h-6 w-px bg-gray-200" />
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowFloatingShareMenu(!showFloatingShareMenu)}
+              className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+            >
+              <Share2 className="h-5 w-5 mr-2.5" />
+              <span className="text-sm font-medium tracking-wide">Share</span>
+            </Button>
+            
+            {/* Share Menu */}
+            {showFloatingShareMenu && (
+              <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 min-w-[280px]">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900">Share this deck</h4>
+                  <button 
+                    onClick={() => setShowFloatingShareMenu(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                
+                {/* Copy Link */}
+                <div className="flex items-center bg-gray-50 rounded-xl p-3 mb-4">
+                  <input 
+                    type="text" 
+                    value={shareUrl} 
+                    readOnly 
+                    className="flex-1 bg-transparent text-sm text-gray-600 outline-none truncate"
+                  />
+                  <button 
+                    onClick={handleCopyLink}
+                    className="ml-2 flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    <span className="ml-1.5">{copied ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                </div>
+                
+                {/* Social Buttons */}
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleShareTwitter}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium min-w-[90px]"
+                  >
+                    <Twitter className="h-4 w-4" />
+                    Twitter
+                  </button>
+                  <button 
+                    onClick={handleShareLinkedIn}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#0077B5] text-white rounded-xl hover:bg-[#006699] transition-colors text-sm font-medium min-w-[90px]"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn
+                  </button>
+                  <button 
+                    onClick={handleShareEmail}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium min-w-[90px]"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="h-6 w-px bg-gray-200" />
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowCommentPanel(!showCommentPanel)}
+            className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+          >
+            <MessageCircle className="h-5 w-5 mr-2.5" />
+            <span className="text-sm font-medium tracking-wide">Comment</span>
+          </Button>
+          <div className="h-6 w-px bg-gray-200" />
+          <Button 
+            variant="ghost" 
+            onClick={toggleFullscreen}
+            className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-5 w-5" />
+            ) : (
+              <Maximize2 className="h-5 w-5" />
+            )}
+          </Button>
+        </div>
       </div>
+      )}
+
+      {/* Comment Panel - hidden in fullscreen */}
+      {showCommentPanel && !isFullscreen && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 ml-24 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[420px] max-h-[70vh] overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium text-gray-900">Comments {comments.length > 0 && `(${comments.length})`}</h4>
+            <button 
+              onClick={() => setShowCommentPanel(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          
+          {/* Comment Form */}
+          <form onSubmit={handleSubmitComment} className="mb-4">
+            <input
+              type="text"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder="Your name"
+              className="w-full p-3 border border-gray-200 rounded-xl text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            />
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="What do you think about this pitch deck?"
+              className="w-full h-20 p-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            />
+            <div className="flex justify-end mt-3">
+              <Button 
+                type="submit"
+                disabled={!comment.trim() || !authorName.trim() || submittingComment}
+                className="bg-black text-white hover:bg-gray-800 px-5 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingComment ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                {submittingComment ? 'Submitting...' : 'Submit'}
+              </Button>
+            </div>
+          </form>
+
+          {/* Existing Comments */}
+          {comments.length > 0 && (
+            <div className="border-t border-gray-100 pt-4 overflow-y-auto flex-1">
+              <div className="space-y-4">
+                {comments.map((c) => (
+                  <div key={c.id} className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900 text-sm">{c.author_name}</span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{c.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {comments.length === 0 && (
+            <p className="text-sm text-gray-500 text-center py-4">No comments yet. Be the first!</p>
+          )}
+        </div>
+      )}
+
+      {/* Bottom Right - Pagination - hidden in fullscreen */}
+      {totalPages > 0 && !isFullscreen && (
+        <div className="absolute bottom-8 right-6">
+          <div className="flex items-center bg-white shadow-lg border border-gray-200 rounded-xl px-2 py-1.5">
+            <Button
+              variant="ghost"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 disabled:opacity-30"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[60px] text-center text-gray-900 text-sm font-medium tracking-wide">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="ghost"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8 p-0 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 disabled:opacity-30"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

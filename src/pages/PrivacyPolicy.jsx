@@ -16,7 +16,7 @@ export default function PrivacyPolicy({ onBack }) {
             Back to OnlyDecks
           </Button>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-          <p className="text-gray-600">Last updated: October 1, 2025</p>
+          <p className="text-gray-600">Last updated: January 1, 2026</p>
         </div>
 
         {/* Content */}
@@ -36,8 +36,7 @@ export default function PrivacyPolicy({ onBack }) {
               We collect information you provide directly to us, such as:
             </p>
             <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
-              <li>Name and email address when you create an account</li>
-              <li>Payment information when you subscribe to our services</li>
+              <li>Email address when you subscribe to our newsletter</li>
               <li>Company information when you submit a pitch deck</li>
               <li>Communications you send to us</li>
             </ul>
@@ -62,11 +61,11 @@ export default function PrivacyPolicy({ onBack }) {
             </p>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
               <li>Provide, maintain, and improve our services</li>
-              <li>Process transactions and send related information</li>
+              <li>Send you our newsletter if you've subscribed</li>
               <li>Send you technical notices and support messages</li>
               <li>Respond to your comments and questions</li>
               <li>Monitor and analyze trends and usage</li>
-              <li>Detect and prevent fraudulent transactions</li>
+              <li>Detect and prevent fraudulent activities</li>
               <li>Comply with legal obligations</li>
             </ul>
           </section>
@@ -87,8 +86,7 @@ export default function PrivacyPolicy({ onBack }) {
               We work with third-party service providers who assist us in operating our platform:
             </p>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li>Stripe for payment processing</li>
-              <li>Supabase for data storage and authentication</li>
+              <li>Supabase for data storage</li>
               <li>Vercel for hosting and content delivery</li>
               <li>Analytics providers for usage insights</li>
             </ul>
@@ -103,7 +101,6 @@ export default function PrivacyPolicy({ onBack }) {
               <li>Encryption of data in transit and at rest</li>
               <li>Regular security assessments and updates</li>
               <li>Access controls and authentication requirements</li>
-              <li>Secure payment processing through Stripe</li>
               <li>Regular backups and disaster recovery procedures</li>
             </ul>
           </section>
@@ -117,8 +114,7 @@ export default function PrivacyPolicy({ onBack }) {
               <li><strong>Access:</strong> Request a copy of your personal information</li>
               <li><strong>Correction:</strong> Update or correct inaccurate information</li>
               <li><strong>Deletion:</strong> Request deletion of your personal information</li>
-              <li><strong>Portability:</strong> Request a copy of your data in a portable format</li>
-              <li><strong>Objection:</strong> Object to certain processing of your information</li>
+              <li><strong>Unsubscribe:</strong> Opt out of our newsletter at any time</li>
             </ul>
           </section>
 
@@ -131,7 +127,6 @@ export default function PrivacyPolicy({ onBack }) {
               <li>Essential cookies for platform functionality</li>
               <li>Analytics cookies to understand usage patterns</li>
               <li>Preference cookies to remember your settings</li>
-              <li>Authentication cookies to keep you logged in</li>
             </ul>
             <p className="text-gray-700 mt-4">
               You can control cookies through your browser settings, but some features may not work properly if cookies are disabled.
@@ -139,43 +134,35 @@ export default function PrivacyPolicy({ onBack }) {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">8. International Data Transfers</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">8. Data Retention</h2>
             <p className="text-gray-700 mb-4">
-              Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your information in accordance with applicable data protection laws.
+              We retain your personal information for as long as necessary to provide our services and comply with legal obligations. Pitch decks remain publicly available unless you request removal or they reach their expiry date.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">9. Data Retention</h2>
-            <p className="text-gray-700 mb-4">
-              We retain your personal information for as long as necessary to provide our services and comply with legal obligations. Pitch decks remain publicly available unless you request removal.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">10. Children's Privacy</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">9. Children's Privacy</h2>
             <p className="text-gray-700 mb-4">
               Our Service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">11. Changes to This Privacy Policy</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">10. Changes to This Privacy Policy</h2>
             <p className="text-gray-700 mb-4">
               We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">12. Contact Us</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">11. Contact Us</h2>
             <p className="text-gray-700 mb-4">
               If you have any questions about this Privacy Policy or our privacy practices, please contact us:
             </p>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-gray-700">
                 <strong>Email:</strong> privacy@onlydecks.io<br />
-                <strong>Address:</strong> OnlyDecks.io, 123 Startup Street, San Francisco, CA 94105<br />
-                <strong>Data Protection Officer:</strong> dpo@onlydecks.io
+                <strong>Address:</strong> OnlyDecks.io, 123 Startup Street, San Francisco, CA 94105
               </p>
             </div>
           </section>
