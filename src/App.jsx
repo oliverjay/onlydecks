@@ -279,11 +279,11 @@ function App() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="flex-1 px-5 h-14 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent font-normal"
+                  className="w-full sm:flex-1 px-5 h-14 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent font-normal"
                 />
                 <Button 
                   type="submit"
-                  className="bg-black text-white hover:bg-gray-900 px-10 h-14 rounded-lg font-normal text-sm tracking-wide transition-all duration-200 hover:shadow-lg whitespace-nowrap"
+                  className="bg-black text-white hover:bg-gray-900 px-10 h-14 rounded-lg font-normal text-sm tracking-wide transition-all duration-200 hover:shadow-lg whitespace-nowrap w-full sm:w-auto"
                   disabled={subscribing}
                 >
                   {subscribing ? (

@@ -327,29 +327,29 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
     <div ref={viewerRef} className={`fixed inset-0 z-50 flex flex-col ${isFullscreen ? 'bg-black' : 'bg-black'}`}>
       {/* Header - hidden in fullscreen */}
       {!isFullscreen && (
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-b border-gray-100 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between flex-shrink-0">
         {/* Left side - Back button, Title, and Metadata */}
-        <div className="flex items-center space-x-5 flex-1 min-w-0">
+        <div className="flex items-center space-x-2 md:space-x-5 flex-1 min-w-0">
           <Button 
             variant="ghost" 
             onClick={onClose} 
-            className="h-12 w-12 p-0 hover:bg-gray-50 rounded-xl flex-shrink-0 transition-all duration-200"
+            className="h-10 w-10 md:h-12 md:w-12 p-0 hover:bg-gray-50 rounded-xl flex-shrink-0 transition-all duration-200"
             title="Back (Esc)"
           >
-            <ArrowLeft className="h-6 w-6 text-gray-700" />
+            <ArrowLeft className="h-5 w-5 md:h-6 md:w-6 text-gray-700" />
           </Button>
           
-          <div className="min-w-0">
-            <div className="flex items-center space-x-4 mb-1.5">
-              <h3 className="text-lg font-medium text-gray-900 truncate tracking-tight">{deck.title}</h3>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 md:gap-4 mb-0.5 md:mb-1.5">
+              <h3 className="text-sm md:text-lg font-medium text-gray-900 truncate tracking-tight">{deck.title}</h3>
               {deck.expires_at && new Date(deck.expires_at) > new Date() && (
-                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs flex-shrink-0 font-medium tracking-wide">
-                  Currently Fundraising
+                <span className="bg-green-500 text-white px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs flex-shrink-0 font-medium tracking-wide">
+                  Fundraising
                 </span>
               )}
             </div>
             
-            <div className="flex items-center space-x-4 text-sm text-gray-600 font-normal">
+            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600 font-normal">
               {deck.categories && (
                 <span className="tracking-wide">{deck.categories.name}</span>
               )}
@@ -366,40 +366,52 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
                 <span className="tracking-wide">{deck.location}</span>
               )}
             </div>
+            {/* Mobile metadata - simplified */}
+            <div className="flex md:hidden items-center text-xs text-gray-500 font-normal">
+              {deck.funding_min && deck.funding_max && (
+                <span>{formatFundingRange(deck.funding_min, deck.funding_max)}</span>
+              )}
+              {deck.funding_min && deck.location && (
+                <span className="mx-1.5">•</span>
+              )}
+              {deck.location && (
+                <span>{deck.location}</span>
+              )}
+            </div>
           </div>
         </div>
         
         {/* Right side - Views, Download, Share */}
-        <div className="flex items-center space-x-1 flex-shrink-0">
+        <div className="flex items-center space-x-0.5 md:space-x-1 flex-shrink-0">
           <Button 
             variant="ghost" 
-            className="h-11 px-4 hover:bg-gray-50 rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
+            className="h-9 md:h-11 px-2 md:px-4 hover:bg-gray-50 rounded-lg md:rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
             title="Views"
           >
-            <Eye className="h-5 w-5 mr-2" />
-            <span className="text-sm font-medium tracking-wide">{views}</span>
+            <Eye className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
+            <span className="text-xs md:text-sm font-medium tracking-wide ml-1">{views}</span>
           </Button>
           <Button 
             variant="ghost" 
             onClick={handleDownload}
-            className="h-11 w-11 hover:bg-gray-50 rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
+            className="h-9 w-9 md:h-11 md:w-11 hover:bg-gray-50 rounded-lg md:rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
             title="Download PDF"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
           <div className="relative">
             <Button 
               variant="ghost" 
               onClick={() => setShowHeaderShareMenu(!showHeaderShareMenu)}
-              className="h-11 w-11 hover:bg-gray-50 rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
+              className="h-9 w-9 md:h-11 md:w-11 hover:bg-gray-50 rounded-lg md:rounded-xl text-gray-600 hover:text-gray-900 transition-all duration-200"
               title="Share"
             >
-              <Share2 className="h-5 w-5" />
+              <Share2 className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
             
             {/* Share Menu Dropdown */}
             {showHeaderShareMenu && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 min-w-[280px] z-50">
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 w-[280px] md:min-w-[280px] z-50">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-medium text-gray-900">Share this deck</h4>
                   <button 
@@ -469,11 +481,11 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Thumbnail Sidebar - hidden in fullscreen */}
+        {/* Thumbnail Sidebar - hidden on mobile and in fullscreen */}
         {!isFullscreen && (
         <div 
           ref={sidebarRef}
-          className="w-48 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0 p-3 space-y-4"
+          className="hidden md:block w-48 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0 p-3 space-y-4"
           onMouseEnter={() => setIsOverSidebar(true)}
           onMouseLeave={() => setIsOverSidebar(false)}
         >
@@ -511,43 +523,43 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
         )}
 
         {/* Main Slide View */}
-        <div className={`flex-1 flex items-center justify-center overflow-auto relative ${isFullscreen ? 'bg-black p-0' : 'bg-gray-100 p-4'}`}>
+        <div className={`flex-1 flex items-center justify-center overflow-auto relative ${isFullscreen ? 'bg-black p-0' : 'bg-gray-100 p-2 md:p-4'}`}>
           {loading ? (
             <div className="flex flex-col items-center justify-center text-gray-500">
-              <Loader2 className="h-12 w-12 animate-spin mb-4" />
-              <p className="font-medium">Loading presentation...</p>
+              <Loader2 className="h-8 w-8 md:h-12 md:w-12 animate-spin mb-4" />
+              <p className="font-medium text-sm md:text-base">Loading presentation...</p>
             </div>
           ) : error ? (
-            <div className="text-center text-gray-500">
-              <p className="text-xl font-medium mb-2">Unable to load PDF</p>
+            <div className="text-center text-gray-500 px-4">
+              <p className="text-lg md:text-xl font-medium mb-2">Unable to load PDF</p>
               <p className="text-sm mb-4">{error}</p>
               <Button onClick={onClose} variant="outline">Go Back</Button>
             </div>
           ) : (
             <>
-              <div className={`${isFullscreen ? '' : 'bg-white shadow-2xl rounded-sm'} overflow-hidden`}>
+              <div className={`${isFullscreen ? '' : 'bg-white shadow-2xl rounded-sm'} overflow-hidden max-w-full`}>
                 <canvas ref={mainCanvasRef} className="block max-w-full h-auto" />
               </div>
               
-              {/* Fullscreen navigation zones - click left/right to navigate */}
-              {isFullscreen && (
+              {/* Navigation zones - click left/right to navigate (both mobile and fullscreen) */}
+              {(isFullscreen || window.innerWidth < 768) && (
                 <>
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    className="absolute left-0 top-0 w-1/4 h-full cursor-w-resize opacity-0 hover:opacity-100 transition-opacity flex items-center justify-start pl-8"
+                    className="absolute left-0 top-0 w-1/4 h-full cursor-w-resize opacity-0 active:opacity-100 md:hover:opacity-100 transition-opacity flex items-center justify-start pl-2 md:pl-8"
                     disabled={currentPage === 1}
                   >
-                    <div className={`bg-white/20 backdrop-blur-sm rounded-full p-3 ${currentPage === 1 ? 'opacity-30' : ''}`}>
-                      <ChevronLeft className="h-8 w-8 text-white" />
+                    <div className={`bg-black/30 md:bg-white/20 backdrop-blur-sm rounded-full p-2 md:p-3 ${currentPage === 1 ? 'opacity-30' : ''}`}>
+                      <ChevronLeft className="h-6 w-6 md:h-8 md:w-8 text-white" />
                     </div>
                   </button>
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    className="absolute right-0 top-0 w-1/4 h-full cursor-e-resize opacity-0 hover:opacity-100 transition-opacity flex items-center justify-end pr-8"
+                    className="absolute right-0 top-0 w-1/4 h-full cursor-e-resize opacity-0 active:opacity-100 md:hover:opacity-100 transition-opacity flex items-center justify-end pr-2 md:pr-8"
                     disabled={currentPage === totalPages}
                   >
-                    <div className={`bg-white/20 backdrop-blur-sm rounded-full p-3 ${currentPage === totalPages ? 'opacity-30' : ''}`}>
-                      <ChevronRight className="h-8 w-8 text-white" />
+                    <div className={`bg-black/30 md:bg-white/20 backdrop-blur-sm rounded-full p-2 md:p-3 ${currentPage === totalPages ? 'opacity-30' : ''}`}>
+                      <ChevronRight className="h-6 w-6 md:h-8 md:w-8 text-white" />
                     </div>
                   </button>
                 </>
@@ -560,130 +572,244 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
       {/* Floating Action Buttons - Bottom Center */}
       {isFullscreen ? (
         /* Minimal UI in fullscreen - just exit button and page indicator */
-        <div className="absolute bottom-8 right-8">
-          <div className="flex items-center gap-4">
+        <div className="absolute bottom-4 md:bottom-8 right-4 md:right-8">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Exit fullscreen button */}
             <Button 
               onClick={toggleFullscreen}
-              className="bg-white/90 hover:bg-white text-gray-900 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg"
+              className="bg-white/90 hover:bg-white text-gray-900 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-medium transition-all shadow-lg"
             >
-              <Minimize2 className="h-4 w-4 mr-2" />
-              Exit Fullscreen
+              <Minimize2 className="h-4 w-4 mr-1 md:mr-2" />
+              Exit
             </Button>
             {/* Page indicator */}
-            <div className="bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+            <div className="bg-black/60 backdrop-blur-md text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-medium">
               {currentPage} / {totalPages}
             </div>
           </div>
         </div>
       ) : (
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 ml-24">
-        <div className="flex items-center bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl px-2 py-2 space-x-1 border border-gray-200/50">
-          <Button 
-            variant="ghost" 
-            onClick={handleDownload}
-            className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
-          >
-            <Download className="h-5 w-5 mr-2.5" />
-            <span className="text-sm font-medium tracking-wide">Download</span>
-          </Button>
-          <div className="h-6 w-px bg-gray-200" />
-          <div className="relative">
+      <>
+        {/* Mobile Bottom Bar */}
+        <div className="md:hidden absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 safe-area-inset-bottom">
+          <div className="flex items-center justify-between">
+            {/* Left - Pagination */}
+            <div className="flex items-center bg-gray-100 rounded-lg px-1 py-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 flex items-center justify-center text-gray-700 disabled:opacity-30 rounded-md active:bg-gray-200"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <span className="min-w-[50px] text-center text-gray-900 text-xs font-medium">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 flex items-center justify-center text-gray-700 disabled:opacity-30 rounded-md active:bg-gray-200"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Right - Actions */}
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={handleDownload}
+                className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => setShowFloatingShareMenu(!showFloatingShareMenu)}
+                className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => setShowCommentPanel(!showCommentPanel)}
+                className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={toggleFullscreen}
+                className="h-10 w-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <Maximize2 className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Floating Bar */}
+        <div className="hidden md:block absolute bottom-8 left-1/2 -translate-x-1/2 ml-24">
+          <div className="flex items-center bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl px-2 py-2 space-x-1 border border-gray-200/50">
             <Button 
               variant="ghost" 
-              onClick={() => setShowFloatingShareMenu(!showFloatingShareMenu)}
+              onClick={handleDownload}
               className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
             >
-              <Share2 className="h-5 w-5 mr-2.5" />
-              <span className="text-sm font-medium tracking-wide">Share</span>
+              <Download className="h-5 w-5 mr-2.5" />
+              <span className="text-sm font-medium tracking-wide">Download</span>
             </Button>
-            
-            {/* Share Menu */}
-            {showFloatingShareMenu && (
-              <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 min-w-[280px]">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-gray-900">Share this deck</h4>
-                  <button 
-                    onClick={() => setShowFloatingShareMenu(false)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            <div className="h-6 w-px bg-gray-200" />
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowFloatingShareMenu(!showFloatingShareMenu)}
+                className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+              >
+                <Share2 className="h-5 w-5 mr-2.5" />
+                <span className="text-sm font-medium tracking-wide">Share</span>
+              </Button>
+              
+              {/* Share Menu */}
+              {showFloatingShareMenu && (
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 min-w-[280px]">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-gray-900">Share this deck</h4>
+                    <button 
+                      onClick={() => setShowFloatingShareMenu(false)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  {/* Copy Link */}
+                  <div className="flex items-center bg-gray-50 rounded-xl p-3 mb-4">
+                    <input 
+                      type="text" 
+                      value={shareUrl} 
+                      readOnly 
+                      className="flex-1 bg-transparent text-sm text-gray-600 outline-none truncate"
+                    />
+                    <button 
+                      onClick={handleCopyLink}
+                      className="ml-2 flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    >
+                      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      <span className="ml-1.5">{copied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  
+                  {/* Social Buttons */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleShareTwitter}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium min-w-[90px]"
+                    >
+                      <Twitter className="h-4 w-4" />
+                      Twitter
+                    </button>
+                    <button 
+                      onClick={handleShareLinkedIn}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#0077B5] text-white rounded-xl hover:bg-[#006699] transition-colors text-sm font-medium min-w-[90px]"
+                    >
+                      <Linkedin className="h-4 w-4" />
+                      LinkedIn
+                    </button>
+                    <button 
+                      onClick={handleShareEmail}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium min-w-[90px]"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </button>
+                  </div>
                 </div>
-                
-                {/* Copy Link */}
-                <div className="flex items-center bg-gray-50 rounded-xl p-3 mb-4">
-                  <input 
-                    type="text" 
-                    value={shareUrl} 
-                    readOnly 
-                    className="flex-1 bg-transparent text-sm text-gray-600 outline-none truncate"
-                  />
-                  <button 
-                    onClick={handleCopyLink}
-                    className="ml-2 flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                    <span className="ml-1.5">{copied ? 'Copied!' : 'Copy'}</span>
-                  </button>
-                </div>
-                
-                {/* Social Buttons */}
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleShareTwitter}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium min-w-[90px]"
-                  >
-                    <Twitter className="h-4 w-4" />
-                    Twitter
-                  </button>
-                  <button 
-                    onClick={handleShareLinkedIn}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#0077B5] text-white rounded-xl hover:bg-[#006699] transition-colors text-sm font-medium min-w-[90px]"
-                  >
-                    <Linkedin className="h-4 w-4" />
-                    LinkedIn
-                  </button>
-                  <button 
-                    onClick={handleShareEmail}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium min-w-[90px]"
-                  >
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
+            <div className="h-6 w-px bg-gray-200" />
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowCommentPanel(!showCommentPanel)}
+              className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+            >
+              <MessageCircle className="h-5 w-5 mr-2.5" />
+              <span className="text-sm font-medium tracking-wide">Comment</span>
+            </Button>
+            <div className="h-6 w-px bg-gray-200" />
+            <Button 
+              variant="ghost" 
+              onClick={toggleFullscreen}
+              className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-5 w-5" />
+              ) : (
+                <Maximize2 className="h-5 w-5" />
+              )}
+            </Button>
           </div>
-          <div className="h-6 w-px bg-gray-200" />
-          <Button 
-            variant="ghost" 
-            onClick={() => setShowCommentPanel(!showCommentPanel)}
-            className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
-          >
-            <MessageCircle className="h-5 w-5 mr-2.5" />
-            <span className="text-sm font-medium tracking-wide">Comment</span>
-          </Button>
-          <div className="h-6 w-px bg-gray-200" />
-          <Button 
-            variant="ghost" 
-            onClick={toggleFullscreen}
-            className="h-11 px-5 hover:bg-gray-100 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-200"
-            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="h-5 w-5" />
-            ) : (
-              <Maximize2 className="h-5 w-5" />
-            )}
-          </Button>
         </div>
-      </div>
+      </>
+      )}
+
+      {/* Mobile Share Menu - positioned above bottom bar */}
+      {showFloatingShareMenu && !isFullscreen && (
+        <div className="md:hidden fixed bottom-16 left-2 right-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium text-gray-900">Share this deck</h4>
+            <button 
+              onClick={() => setShowFloatingShareMenu(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          
+          {/* Copy Link */}
+          <div className="flex items-center bg-gray-50 rounded-xl p-3 mb-4">
+            <input 
+              type="text" 
+              value={shareUrl} 
+              readOnly 
+              className="flex-1 bg-transparent text-sm text-gray-600 outline-none truncate"
+            />
+            <button 
+              onClick={handleCopyLink}
+              className="ml-2 flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              <span className="ml-1.5">{copied ? 'Copied!' : 'Copy'}</span>
+            </button>
+          </div>
+          
+          {/* Social Buttons */}
+          <div className="flex gap-2">
+            <button 
+              onClick={handleShareTwitter}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-3 bg-black text-white rounded-xl text-sm font-medium"
+            >
+              <Twitter className="h-4 w-4" />
+              Twitter
+            </button>
+            <button 
+              onClick={handleShareLinkedIn}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-3 bg-[#0077B5] text-white rounded-xl text-sm font-medium"
+            >
+              <Linkedin className="h-4 w-4" />
+              LinkedIn
+            </button>
+            <button 
+              onClick={handleShareEmail}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium"
+            >
+              <Mail className="h-4 w-4" />
+              Email
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Comment Panel - hidden in fullscreen */}
       {showCommentPanel && !isFullscreen && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 ml-24 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[420px] max-h-[70vh] overflow-hidden flex flex-col">
+        <div className="fixed md:absolute bottom-16 md:bottom-24 left-2 right-2 md:left-1/2 md:right-auto md:-translate-x-1/2 md:ml-24 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 md:p-5 md:w-[420px] max-h-[60vh] md:max-h-[70vh] overflow-hidden flex flex-col z-50">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-medium text-gray-900">Comments {comments.length > 0 && `(${comments.length})`}</h4>
             <button 
@@ -750,9 +876,9 @@ export default function EnhancedPDFViewer({ deck, onClose }) {
         </div>
       )}
 
-      {/* Bottom Right - Pagination - hidden in fullscreen */}
+      {/* Bottom Right - Pagination - hidden in fullscreen and on mobile (mobile has its own) */}
       {totalPages > 0 && !isFullscreen && (
-        <div className="absolute bottom-8 right-6">
+        <div className="hidden md:block absolute bottom-8 right-6">
           <div className="flex items-center bg-white shadow-lg border border-gray-200 rounded-xl px-2 py-1.5">
             <Button
               variant="ghost"
